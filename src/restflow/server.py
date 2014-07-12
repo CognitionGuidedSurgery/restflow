@@ -6,7 +6,7 @@ from .utils import *
 
 from flask import Flask, request
 from flask.ext.restful import reqparse, abort, Api, Resource
-
+from path import path
 
 app = Flask(__name__)
 api = Api(app)
@@ -127,9 +127,11 @@ def get_session(token = None):
 import tempfile
 
 def open_session(name):
-    hf3 = merge_dict(HF3_TEMPLATE, HF3_OUTPUTDIR_UPDATE(tempfile.mkdtemp(prefix=name)))
+    """creates a new session/simulation environment"""
+    simdata = tempfile.mkdtemp(prefix=name)
+    hf3 = merge_dict(HF3_TEMPLATE, HF3_OUTPUTDIR_UPDATE(simdata))
     bcdata = BCDATA_TEMPLATE
-    SESSION[name] = Session(hf3, bcdata, None)
+    SESSION[name] = Session(hf3, bcdata, simdata)
 
 open_session("0") #DEBUG purpose
 
@@ -196,16 +198,32 @@ class BCData(Resource):
 
 class RunHiFlow(Resource):
     def get(self):
-        token = request.args['token']
-        session = SESSION[token]
+        session = get_session()
 
         steps = request.args['steps']
-        print steps
+        deltaT = request.args['deltaT']
 
-        print session.hf3xml()
-        print session.bcdataxml()
+        workingdir = path(session.simstate)
 
-        print "Execute hiflow3 ..."
+        print steps, deltaT
+
+        bcdata =  session.bcdataxml()
+        bcfile =  tempfile.mktemp(".xml", "bcdata_", workingdir)
+
+        with open(bcfile, 'w') as fh:
+            fh.write(bcdata)
+
+        session.hf3 = merge_dict(session.hf3,
+                HF3_MESH_BCDATA_FILENAME_UPDATE(bcfile))
+
+        hf3xml =  session.hf3xml()
+
+        hf3file  =  tempfile.mktemp(".xml", "hf3_", workingdir)
+
+        with open(hf3file, 'w') as fh:
+            fh.write(hf3xml)
+
+        print "Execute hiflow3 ...", hf3file, bcfile, workingdir
 
         return "ok"
 
@@ -236,11 +254,12 @@ api.add_resource(GetTemplate, '/template/<string:type>')
 api.add_resource(Assets, '/assets')
 
 # Session Management
-api.add_resource(StartSession, '/simulation/start')
+api.add_resource(StartSession, '/simulation/new')
 api.add_resource(StopSession,  '/simulation/clean')
 
 # Simulation
-api.add_resource(BCData, '/simulation/bc')
-api.add_resource(Hf3Data, '/simulation/hf3')
-api.add_resource(RunHiFlow, '/simulation/result/<string:type>')
+api.add_resource(BCData,    '/simulation/bc')
+api.add_resource(Hf3Data,   '/simulation/hf3')
+api.add_resource(RunHiFlow, '/simulation/run')
+api.add_resource(Result, '/simulation/result/<string:type>')
 

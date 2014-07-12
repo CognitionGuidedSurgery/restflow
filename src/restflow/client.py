@@ -1,4 +1,28 @@
-__author__ = 'Alexander Weigl'
+#
+# Copyright (C) 2013-2014 Alexander Weigl, Nicolai Schoch
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+"""
+Client for restflow
+
+
+"""
+
+__author__ = "Alexander Weigl <uiduw@student.kit.edu>"
+__date__   = "2014-07-11"
+
 
 import json
 
@@ -14,7 +38,7 @@ class HiFlowRestClient(object):
 
 
     def open_simulation(self):
-        r = requests.get(self.url("simulation/start"))
+        r = requests.get(self.url("simulation/new"))
         if r.status_code != 200:
             raise BaseException("status_code != 200")
         token = r.json()['token']
@@ -97,6 +121,7 @@ class Simulation(object):
         r = requests.get(self.client.url('simulation/run'),
                          params={'token': self.token, 'steps': steps, 'deltaT': deltaT})
         if r.status_code != 200:
+            print r.content
             raise RestApiException()
 
         return
