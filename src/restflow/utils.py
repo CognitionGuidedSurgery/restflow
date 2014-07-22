@@ -1,38 +1,49 @@
 __author__ = 'weigl'
 
-#
-# import vtk
-#
-# def vtk2surf(a,b):
-#     reader = vtk.vtkUnstructuredGridReader()
-#     reader.SetFileName(a)
-#
-#     surface_filter = vtk.vtkDataSetSurfaceFilter()
-#     surface_filter.SetInputConnection(reader.GetOutputPort())
-#
-#     triangle_filter = vtk.vtkTriangleFilter()
-#     triangle_filter.SetInputConnection(surface_filter.GetOutputPort())
-#
-#     writer = vtk.vtkPolyDataWriter()
-#     writer.SetFileName(b)
-#     writer.SetInputConnection(triangle_filter.GetOutputPort())
-#     writer.Write()
-#
-# def vtk2stl(a,b):
-#     reader = vtk.vtkUnstructuredGridReader()
-#     reader.SetFileName(a)
-#
-#     surface_filter = vtk.vtkDataSetSurfaceFilter()
-#     surface_filter.SetInputConnection(reader.GetOutputPort())
-#
-#     triangle_filter = vtk.vtkTriangleFilter()
-#     triangle_filter.SetInputConnection(surface_filter.GetOutputPort())
-#
-#     writer = vtk.vtkSTLWriter()
-#     writer.SetFileName(b)
-#     writer.SetInputConnection(triangle_filter.GetOutputPort())
-#     writer.Write()
-#
+import vtk
+from vtk import *
+
+def vtk2surf(a,b):
+    reader = vtk.vtkUnstructuredGridReader()
+    reader.SetFileName(a)
+
+    surface_filter = vtk.vtkDataSetSurfaceFilter()
+    surface_filter.SetInputConnection(reader.GetOutputPort())
+
+    triangle_filter = vtk.vtkTriangleFilter()
+    triangle_filter.SetInputConnection(surface_filter.GetOutputPort())
+
+    writer = vtk.vtkPolyDataWriter()
+    writer.SetFileName(b)
+    writer.SetInputConnection(triangle_filter.GetOutputPort())
+    writer.Write()
+
+def vtk2stl(a,b):
+    reader = vtk.vtkUnstructuredGridReader()
+    reader.SetFileName(a)
+
+    surface_filter = vtk.vtkDataSetSurfaceFilter()
+    surface_filter.SetInputConnection(reader.GetOutputPort())
+
+    triangle_filter = vtk.vtkTriangleFilter()
+    triangle_filter.SetInputConnection(surface_filter.GetOutputPort())
+
+    writer = vtk.vtkSTLWriter()
+    writer.SetFileName(b)
+    writer.SetInputConnection(triangle_filter.GetOutputPort())
+    writer.Write()
+
+
+def vtk2vtu(a,b):
+    reader = vtkUnstructuredGridReader()
+    reader.SetFileName(a)
+    reader.Update()
+    writer = vtkXmlUnstructuredGridWriter()
+    writer.SetDataModeToAscii()
+    writer.SetFileName(b)
+    writer.SetInputData(reader.GetOutput())
+    writer.Write()
+
 
 def merge_dict(base, update):
     result = {}
@@ -76,4 +87,4 @@ def generate_id():
 
 
 def indent(string):
-    return "    " + string.replace("\n", "\n    ");
+    return "    " + string.replace("\n", "\n    ")
