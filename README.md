@@ -18,8 +18,11 @@
 
 ## About
 
-restflow allowes you to run (Hiflow3)[http://hiflow3.org] as a webservice with a rest interface.
-The used Hiflow-Binding allowes an interaction with the simulation. You can change the environment or constraints between every runs.
+restflow allows you to run (Hiflow3)[http://hiflow3.org] as a webservice with a rest interface.
+The used Hiflow-Binding allowes an interaction with the simulation. You can change the environment or constraints in between all runs.
+
+Please note that HiFlow3 was released under the Academic License Agreement of KIT until version 1.3. All releases after and including version 1.3 are released under LGPLv3 to support a better community and open source development.
+The application ("Interactive HiFlow3 Soft Tissue Simulation"), which is accessed and used for simulation here, was developed at the Engineering Mathematics and Computing Lab (EMCL) at Heidelberg University as part of ongoing research within the SFB/TRR 125 (Cognition-Guided Surgery).
 
 ## Installation 
 
