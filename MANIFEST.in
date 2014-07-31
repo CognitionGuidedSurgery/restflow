@@ -1,2 +1,2 @@
-include README LICENSE run_restflow.py requirements*.txt
-include-recursive restflow/*
+include README.md LICENSE run_restflow.py requirements*.txt
+include restflow/*

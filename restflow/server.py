@@ -156,7 +156,7 @@ class Assets(Resource):
 
         :query url: an well-formed url
         :statuscode 200: everything alright
-        :statuscode xxx: everything exploded
+        :statuscode 400: everything exploded
 
         """
         url = request.args['url']
@@ -177,7 +177,7 @@ class Assets(Resource):
 
         :query url: an well-formed url
         :statuscode 200: everything alright
-        :statuscode xxx: everything exploded
+        :statuscode 400: everything exploded
         """
         pass
 
