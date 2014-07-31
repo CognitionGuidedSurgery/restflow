@@ -1,0 +1,6 @@
+-r requirements.txt
+
+sphinx
+sphinxcontrib-httpdomain
+nose
+flask-testing

@@ -17,3 +17,7 @@ examples
 src/msml/envconfig.py
 elasticity
 doc/_build
+
+.ropeproject
+*~
+*.swp

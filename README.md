@@ -8,6 +8,7 @@
 				    Interactive Hiflow3 Simulation 
 				       an HTTP Request far away
 
+[![Build Status](https://travis-ci.org/CognitionGuidedSurgery/restflow.svg?branch=master)](https://travis-ci.org/CognitionGuidedSurgery/restflow)
 
     Author: Alexander Weigl <Alexander.Weigl@student.kit.edu>
             Nicolai Schoch <Nicolai.Schoch@iwr.uni-heidelberg.de>

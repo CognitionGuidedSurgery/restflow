@@ -18,7 +18,7 @@ import os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('../src/'))
+sys.path.insert(0, os.path.abspath('../'))
 sys.path.insert(0, os.path.abspath('_themes'))
 
 
@@ -33,6 +33,7 @@ sys.path.insert(0, os.path.abspath('_themes'))
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
@@ -40,7 +41,16 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
+    'sphinxcontrib.autohttp.flask',
 ]
+
+autosummary_generate = True
+
+autodoc_default_flags = ['members', 'undoc-members',
+                         'show-inheritance', ]
+
+#autodoc_member_order = 'groupwise'
+todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
