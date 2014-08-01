@@ -11,9 +11,11 @@ from .hiflow3 import *
 
 from flask import Flask, request
 from flask.ext.restful import  abort, Api, Resource
+from flask_restful_swagger import swagger
 
 app = Flask(__name__)
 api = Api(app)
+api = swagger.docs(api, apiVersion='0.1', api_spec_url='/api/spec')
 
 SESSION = {}
 

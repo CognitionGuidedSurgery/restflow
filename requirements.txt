@@ -3,3 +3,4 @@ flask-restful
 requests
 requests-toolbelt
 path.py
+flask-restful-swagger
