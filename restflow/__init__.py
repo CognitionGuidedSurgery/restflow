@@ -27,4 +27,5 @@ Modul Documentation
 
 __author__ = "Alexander Weigl <uiduw@student.kit.edu>"
 __date__   = "2014-07-11"
+__version__ = "0.1-alpha"
 

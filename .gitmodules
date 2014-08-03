@@ -1,3 +1,6 @@
 [submodule "share/three.js"]
 	path = share/three.js
 	url = https://github.com/mrdoob/three.js.git
+[submodule "doc/_themes"]
+	path = doc/_themes
+	url = https://github.com/kennethreitz/kr-sphinx-themes.git

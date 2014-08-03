@@ -1,0 +1,2 @@
+include README.md LICENSE run_restflow.py requirements*.txt
+include restflow/*
