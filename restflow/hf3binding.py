@@ -16,14 +16,21 @@
 
 __author__ = 'Alexander Weigl'
 
-from utils import merge_dict, dict_to_xml
+from utils import *
 import functools
+from path import path
+from .hf3configs import *
+from config import *
+
+SOLUTION_FILENAME = "_solution_np{np}_RefLvl{rlvl}_Tstep.{step}.pvtu"
+
 
 def generate_update(func):
     def fn(*args, **kwargs):
         d = dstruct()
         func(d, *args, **kwargs)
         return d
+
     functools.update_wrapper(fn, func)
     return fn
 
@@ -31,104 +38,38 @@ def generate_update(func):
 def update_bcdata(bcfilename):
     return {'Param': {'Mesh': {'BCdataFilename': bcfilename}}}
 
+def update_meshfile(f):
+    return {'Param': {'Mesh': {'MeshFilename': f}}}
+
+
 def update_output_folder(folder):
     return {'Param': {'OutputPathAndPrefix': folder}}
 
+
 def update_runtime_informations(steps, duration):
-    return {'Param' : {'Instationary': None}}
+    return {'Param': {'Instationary': None}}
 
-RESULTS_DIR = "results/"
 
-HF3_TEMPLATE = {
-    'Param': {
-        'OutputPathAndPrefix': RESULTS_DIR ,
-        'Mesh': {
-            'Filename': None,
-            'BCdataFilename': None,
-            'InitialRefLevel': 0,
-        },
-        'LinearAlgebra': {
-            'Platform': 'CPU',
-            'Implementation': 'Naive',
-            'MatrixFormat': 'CSR',
-        },
-        'ElasticityModel': {
-            'density': 1,
-            'lambda': 0,
-            'mu': 42,
-            'gravity': -9.81,
-        },
-        'QuadratureOrder': 2,
-        'FiniteElements': {
-            'DisplacementDegree': 1,
-        },
-        'Instationary': {
-            'SolveInstationary': 1,
-            'DampingFactor': 1.0,
-            'RayleighAlpha': 0.0,
-            'RayleighBeta': 0.2,
-            'Method': 'Newmark',
-            'DeltaT': 0.05,
-            'MaxTimeStepIts': 10,
-        }
-        ,
-        'LinearSolver': {
-            'SolverName': 'iterativeCG',
-            'MaximumIterations': 1000,
-            'AbsoluteTolerance': 1.e-8,
-            'RelativeTolerance': 1.e-20,
-            'DivergenceLimit': 1.e6,
-            'BasisSize': 1000,
-            'Preconditioning': 1,
-            'PreconditionerName': 'GAUSS_SEIDEL',
-            'Omega': '2.5',
-            'ILU_p': '2.5',
-        },
-        'ILUPP': {
-            'PreprocessingType': 0,
-            'PreconditionerNumber': 11,
-            'MaxMultilevels': 20,
-            'MemFactor': 0.8,
-            'PivotThreshold': 2.75,
-            'MinPivot': 0.05
-        }}
-}
-
-BCDATA_TEMPLATE = {
-    'Param': {
-        'FixedConstraintsBCs': {
-            'NumberOfFixedDirichletPoints': None,
-            'fDPoints': None,
-            'fDisplacements': None,
-        },
-        'DisplacementConstraintsBCs': {
-            'NumberOfDisplacedDirichletPoints': None,
-            'dDPoints': None,
-            'dDisplacements': None,
-        },
-        'ForceOrPressureBCs': {
-            'NumberOfForceOrPressureBCPoints': None,
-            'ForceOrPressureBCPoints': None,
-            'ForcesOrPressures':None,
-        }
-    }
-}
 
 import os.path, os, subprocess
 from collections import defaultdict
+
 
 class dstruct(defaultdict):
     def __init__(self):
         super(dstruct, self).__init__(lambda: dstruct())
 
     def __setattr__(self, key, item): self[key] = item
+
     def __getattr__(self, key): return self[key]
+
 
 def md(*args):
     try:
         return os.mkdir(*args)
     except OSError as e:
         if e.errno != 17: raise e
+
 
 class Hiflow3Session(object):
     """This class handles session of the elasticity executable.
@@ -138,10 +79,13 @@ class Hiflow3Session(object):
      """
 
     def __init__(self, working_dir):
-        self._working_dir = working_dir
-        self._hf3 = HF3_TEMPLATE
-        self._bc = BCDATA_TEMPLATE
+        self._working_dir = path(working_dir)
+        self._hf3 = HF3_TEMPLATE_BASIC
+        self._bc = BCDATA_TEMPLATE_BASIC
+
         self._run = 0
+        self._step = 0
+
         out_path = os.path.join(self.working_dir, RESULTS_DIR)
         md(self.working_dir)
         md(out_path)
@@ -152,15 +96,16 @@ class Hiflow3Session(object):
         return self._working_dir
 
     @working_dir.setter
-    def working_dir(self, wd): self._working_dir = wd
-
+    def working_dir(self, wd):
+        self._working_dir = wd
 
     @property
     def hf3(self):
         return self._hf3
 
     @hf3.setter
-    def hf3(self, new_value): self._hf3 = new_value
+    def hf3(self, new_value):
+        self._hf3 = new_value
 
     @property
     def bc(self):
@@ -176,17 +121,42 @@ class Hiflow3Session(object):
     def update_bc(self, to_merged):
         self.bc = merge_dict(self.bc, to_merged)
 
-    def run(self):
+    def get_result_files(self):
+        wildcard = '*'
+        fn = SOLUTION_FILENAME.format(np=wildcard, rlvl=wildcard, step=wildcard)
+        for rd in path(self.working_dir).listdir("result_*"):
+            for rf in rd.files(fn):
+                yield rf
 
+    def get_result(self, step):
+        import fnmatch
+        fn = SOLUTION_FILENAME.format(np="*", rlvl="*", step=step)
+        for rf in self.get_result_files():
+            if fnmatch.fnmatch(rf):
+                return rf
+
+
+
+    def _prepare_config(self):
         BC_FILENAME_TEMPATE = "%s/bc_%03d.xml"
         HF3_FILENAME_TEMPATE = "%s/hf3_%03d.xml"
-        bcfile =  BC_FILENAME_TEMPATE % (self.working_dir, self._run)
+        bcfile = BC_FILENAME_TEMPATE % (self.working_dir, self._run)
         hf3file = HF3_FILENAME_TEMPATE % (self.working_dir, self._run)
 
-        self.update_hf3(update_bcdata(bcfile))
+        output_dir = self.working_dir / RESULTS_DIR.format(run = self._run)
 
-        bcdata =  self.bcdataxml()
-        hf3xml =  self.hf3xml()
+        self.update_hf3(update_bcdata(bcfile))
+        self.update_hf3(update_output_folder(output_dir))
+
+        if self._run > 1:
+            # set the meshfile from last run
+            oldmesh = self.get_result(self._step - 1)
+            newmesh = self.working_dir / "input_{step}.vtu".format(step = self._run)
+            write_vtu(read_ugrid(oldmesh), newmesh)
+            self.update_hf3(update_meshfile(newmesh))
+
+        bcdata = self.bcdataxml()
+        hf3xml = self.hf3xml()
 
         with open(bcfile, 'w') as fh:
             fh.write(bcdata)
@@ -194,29 +164,41 @@ class Hiflow3Session(object):
         with open(hf3file, 'w') as fh:
             fh.write(hf3xml)
 
+        return hf3file, bcfile
 
-        ELASTICITY_PROGRAM = "/home/weigl/workspace/hiflow_1.4/build/examples/elasticity/elasticity"
+
+    def run(self):
+        self._run += 1
+
+        hf3file, bcfile = self._prepare_config()
 
         import StringIO
 
+        try:
+            proc = subprocess.Popen(
+                [ELASTICITY_PROGRAM, hf3file],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
 
-        proc = subprocess.Popen(
-            [ELASTICITY_PROGRAM, hf3file],
-            stdout = subprocess.PIPE,
-            stderr = subprocess.STDOUT)
+            # (stdout, _) = proc.communicate()
+            fil = proc.stdout
+            while True:
+                print fil.readline(),
 
-        #(stdout, _) = proc.communicate()
-        fil = proc.stdout
-        while True:
-            print fil.readline(),
+            #        print stdout
+            proc.wait()
+            if proc.returncode != 0:
+                print proc.returncode
+                #TODO error message, handling
+        except OSError as e:
+            #raise e #TODO
+            pass
 
-#        print stdout
-        proc.wait()
-        if proc.returncode != 0:
-            print proc.returncode
-            #TODO error message, handling
+        steps = self.hf3['Param']['Instationary']['MaxTimeStepIts']
+        new_steps = range(self._step, steps)
+        self._step += steps
+        return new_steps
 
-        return True
 
 
     def hf3xml(self):

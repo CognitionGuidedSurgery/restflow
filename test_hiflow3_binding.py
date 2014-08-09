@@ -1,6 +1,6 @@
 __author__ = "Alexander Weigl"
 
-from restflow.hiflow3 import Hiflow3Session
+from restflow.hf3binding import Hiflow3Session
 
 def main():
     session = Hiflow3Session("tmp/")

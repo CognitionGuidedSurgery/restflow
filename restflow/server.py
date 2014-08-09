@@ -1,4 +1,6 @@
 # -*- encoding: utf-8 -*-
+from flask.helpers import send_file
+
 __author__ = 'Alexander Weigl'
 __date__ = '2014-07-11'
 
@@ -7,7 +9,7 @@ import json
 import requests
 
 from .utils import *
-from .hiflow3 import *
+from .hf3binding import *
 
 from flask import Flask, request
 from flask.ext.restful import  abort, Api, Resource
@@ -32,7 +34,7 @@ def get_session(token=None):
 
     :returns: the session for the current requests
                 or raise an exception
-    :rtype: restflow.hiflow3.Hiflow3Session
+    :rtype: restflow.hf3binding.Hiflow3Session
 
     """
 
@@ -56,10 +58,8 @@ def open_session(name):
 
 open_session("0")  # DEBUG purpose
 
-
-class Simulation(Resource):
-
-    def put(self):
+class SimulationOpen(Resource):
+     def get(self):
         """Starts a new session.
 
         Calling this service allocates a new Hiflow3Session on the
@@ -69,13 +69,13 @@ class Simulation(Resource):
 
         :statuscode 200: no error
 
-
         """
         i = generate_id()
         open_session(i)
         return {'token': i}
 
-    def get(self):
+class Simulation(Resource):
+    def get(self, token):
         """Returns every information about current session state.
 
         :query token: the authorization token
@@ -84,11 +84,10 @@ class Simulation(Resource):
         :statuscode 405: the token is invalid
 
         """
-        token = request.args['token']
-        s = SESSION[token]
-        return (s.hf3, s.bcdata, s.simstate), 200
+        s = get_session(token)
+        return {'hf3': s.hf3, 'bc': s.bc}, 200
 
-    def delete(self):
+    def delete(self, token):
         """deallocate the server resources.
 
         This call deletes the working directory
@@ -100,16 +99,16 @@ class Simulation(Resource):
         :statuscode 405: the token is invalid
 
         """
-
-        token = request.form['token']
         try:
+            tok = get_session(token)
+            del tok
             del SESSION[token]
             # TODO delete simulation data
             return "ok"
         except KeyError as e:
             abort(501, message="Session unknown", code=1)
 
-    def post(self, token):
+    def put(self, token):
         """Update the datasructure
 
         :query token: the authorization token
@@ -117,15 +116,73 @@ class Simulation(Resource):
         :statuscode 200: no error
         :statuscode 405: the token is invalid
         """
-        pass
+        session = get_session(token)
 
+        bc = request.form.get('bc', None)
+        if bc:
+            session._bc = bc
+
+        hf3 = request.form.get('hf3', None)
+        if hf3:
+            session._hf3 = hf3
+
+    def post(self, token):
+        session = get_session(token)
+
+        print request.form
+        update = json.loads(request.form['update'])
+        config = request.form.get('config', 'hf3')
+
+        if config == 'hf3':
+            session.update_hf3(update)
+
+        elif config == 'bc':
+            session.update_bc(update)
+
+        else:
+            abort(501, message="Wrong config value")
+
+
+
+
+
+def insert_key(d, key, value):
+    """
+
+    :param d:
+    :param key:
+    :param value:
+    :return:
+    """
+    if isinstance(key, str):
+        key = key.split("/")
+
+    k = key[0]
+
+    if len(key) == 1:
+        d[k] = value
+    else:
+        if not k in d:
+            d[k] = {}
+
+        if isinstance(d[k], dict):
+            insert_key(d[k], key[1:], value)
+
+
+
+
+
+from restflow import hf3configs
+TEMPLATES = {
+    'hf3': hf3configs.HF3_TEMPLATE_BASIC,
+    'bc' : hf3configs.BCDATA_TEMPLATE_BASIC,
+    }
+
+class TemplateList(Resource):
+    def get(self):
+        return TEMPLATES.keys()
 
 class Template(Resource):
-    TEMPLATES = {
-        'hf3': {},
-        'bc' : {},
-        'softtissue_hf3' :{}
-    }
     def get(self, type):
         try:
             return TEMPLATES[type]
@@ -133,25 +190,28 @@ class Template(Resource):
             return abort(501, "Type %s not valid")
 
 class RunSimulation(Resource):
+    def get(self, token):
+        session = get_session(token)
+        return session.run()
 
+from restflow import resultfunc
+
+
+class ResultList(Resource):
     def get(self):
-        session = get_session()
-
-        steps = request.args['steps']
-        deltaT = request.args['deltaT']
-
-        print steps, deltaT
-
-        return "ok"
+        return resultfunc._REGISTER.keys()
 
 
 class Result(Resource):
-    def get(self, token, run_id, apply):
-        pass
+    def get(self, token, step, func):
+        session = get_session(token)
+        filename = session.get_result(step)
+        result_fn = resultfunc.make_result(func, filename)
+        return send_file(result_fn, as_attachment=True)
 
 
 class Assets(Resource):
-    def get(self):
+    def post(self):
         """Retrieve an asset form the given url.
 
         :returns: the id for the resource on the server
@@ -172,7 +232,7 @@ class Assets(Resource):
 
         return {'filename': filename}
 
-    def post(self):
+    def put(self):
         """Retrieve an asset, uploaded in the post data.
 
         :returns: the id for the resource on the server
@@ -183,12 +243,28 @@ class Assets(Resource):
         """
         pass
 
+class Assets2(Resource):
+    def get(self, aid):
+        """
+        Download given asset
+        :param aid:
+        :return:
+        """
+        pass
 
+    def delete(self, aid):
+        pass
+
+api.add_resource(TemplateList, '/template')
 api.add_resource(Template, '/template/<string:type>')
 api.add_resource(Assets, '/assets')
+api.add_resource(Assets2, '/assets/<string:aid>')
+api.add_resource(ResultList, '/results')
+
 
 # Session Management
-api.add_resource(Simulation, '/session/<string:token>', '/session')
+api.add_resource(SimulationOpen, '/session')
+api.add_resource(Simulation, '/session/<string:token>')
 api.add_resource(RunSimulation, '/session/<string:token>/run')
 
 # Simulation

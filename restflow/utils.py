@@ -4,46 +4,63 @@ try:
     import vtk
     from vtk import *
 
-    def vtk2surf(a, b):
-        reader = vtk.vtkUnstructuredGridReader()
-        reader.SetFileName(a)
+    def read_ugrid(filename):
+        if filename.endswith(".pvtu"):
+            reader = vtk.vtkXMLPUnstructuredGridReader()
+        elif filename.endswith(".vtk"):
+            reader = vtk.vtkUnstructuredGridReader()
+        elif filename.endswith(".vtu"):
+            reader = vtk.vtkUnstructuredGridReader()
+        else:
+            raise BaseException("Illegal filanem suffix %s" % filename)
 
+        reader.SetFileName(filename)
+        reader.Update()
+
+        return reader.GetOutput()
+
+    def write_surface(ugrid, filename):
         surface_filter = vtk.vtkDataSetSurfaceFilter()
-        surface_filter.SetInputConnection(reader.GetOutputPort())
+        surface_filter.SetInputData(ugrid)
 
         triangle_filter = vtk.vtkTriangleFilter()
         triangle_filter.SetInputConnection(surface_filter.GetOutputPort())
 
         writer = vtk.vtkPolyDataWriter()
-        writer.SetFileName(b)
+        writer.SetFileName(filename)
         writer.SetInputConnection(triangle_filter.GetOutputPort())
         writer.Write()
 
-    def vtk2stl(a, b):
-        reader = vtk.vtkUnstructuredGridReader()
-        reader.SetFileName(a)
-
+    def write_stl(ugrid, filename):
         surface_filter = vtk.vtkDataSetSurfaceFilter()
-        surface_filter.SetInputConnection(reader.GetOutputPort())
+        surface_filter.SetInputConnection(ugrid)
 
         triangle_filter = vtk.vtkTriangleFilter()
         triangle_filter.SetInputConnection(surface_filter.GetOutputPort())
 
         writer = vtk.vtkSTLWriter()
-        writer.SetFileName(b)
+        writer.SetFileName(filename)
         writer.SetInputConnection(triangle_filter.GetOutputPort())
         writer.Write()
 
-    def vtk2vtu(a, b):
-        reader = vtkUnstructuredGridReader()
-        reader.SetFileName(a)
-        reader.Update()
-        writer = vtkXmlUnstructuredGridWriter()
-        writer.SetDataModeToAscii()
-        writer.SetFileName(b)
-        writer.SetInputData(reader.GetOutput())
+    def write_vtu(ugrid, filename, mode = 'ascii'):
+        writer = vtk.vtkXmlUnstructuredGridWriter()
+        if mode == 'ascii':
+            writer.SetDataModeToAscii()
+        elif mode == 'binary':
+            writer.SetDataModeToBinary()
+        elif mode == 'append':
+            writer.SetDataModetoAppend()
+
+        writer.SetFileName(filename)
+        writer.SetInputData(ugrid)
         writer.Write()
 
+    def write_vtk(ugrid, filename):
+        writer = vtk.vtkUnstructuredGridWriter()
+        writer.SetFileName(filename)
+        writer.SetInputData(ugrid)
+        writer.Write()
 
 except ImportError as e:
     print "No VTK Module"
