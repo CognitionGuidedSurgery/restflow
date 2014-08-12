@@ -12,6 +12,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+from _mysql import result
 
 
 __author__ = 'Alexander Weigl'
@@ -86,10 +87,10 @@ class Hiflow3Session(object):
         self._run = 0
         self._step = 0
 
-        out_path = os.path.join(self.working_dir, RESULTS_DIR)
+        #out_path = os.path.join(self.working_dir, RESULTS_DIR)
         md(self.working_dir)
-        md(out_path)
-        self.update_hf3(update_output_folder(out_path))
+        #md(out_path)
+        #self.update_hf3(update_output_folder(out_path))
 
     @property
     def working_dir(self):
@@ -124,15 +125,17 @@ class Hiflow3Session(object):
     def get_result_files(self):
         wildcard = '*'
         fn = SOLUTION_FILENAME.format(np=wildcard, rlvl=wildcard, step=wildcard)
-        for rd in path(self.working_dir).listdir("result_*"):
+        resultsd = self.working_dir.listdir(RESULTS_DIR.format(run='*'))
+        for rd in resultsd:
             for rf in rd.files(fn):
                 yield rf
 
     def get_result(self, step):
         import fnmatch
-        fn = SOLUTION_FILENAME.format(np="*", rlvl="*", step=step)
+        fn = SOLUTION_FILENAME.format(np="*", rlvl="*", step="%04d"%step)
         for rf in self.get_result_files():
-            if fnmatch.fnmatch(rf):
+            #print rf.name , fn
+            if fnmatch.fnmatch(rf.name, fn):
                 return rf
 
 
@@ -144,6 +147,8 @@ class Hiflow3Session(object):
         hf3file = HF3_FILENAME_TEMPATE % (self.working_dir, self._run)
 
         output_dir = self.working_dir / RESULTS_DIR.format(run = self._run)
+
+        output_dir.makedirs_p()
 
         self.update_hf3(update_bcdata(bcfile))
         self.update_hf3(update_output_folder(output_dir))
@@ -182,23 +187,21 @@ class Hiflow3Session(object):
 
             # (stdout, _) = proc.communicate()
             fil = proc.stdout
-            while True:
-                print fil.readline(),
-
-            #        print stdout
             proc.wait()
+
+            with open(self.working_dir / "output_%d.txt" % self._run, 'w') as fp:
+                fp.write(proc.stdout.read())
+
             if proc.returncode != 0:
                 print proc.returncode
-                #TODO error message, handling
+                raise BaseException("Hiflow did terminate with %d" % proc.returncode)
         except OSError as e:
-            #raise e #TODO
-            pass
+            raise e #TODO
 
         steps = self.hf3['Param']['Instationary']['MaxTimeStepIts']
-        new_steps = range(self._step, steps)
+        new_steps = range(1 + self._step, 1 + steps)
         self._step += steps
         return new_steps
-
 
 
     def hf3xml(self):

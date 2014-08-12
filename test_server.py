@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
-
-import requests, json, see, pprint
-
+import json , requests, see, pprint
 
 class HTTPResponseError(BaseException):
     def __init__(self, message, **kwargs):
@@ -24,7 +22,6 @@ def _handle_json(resp):
 
 def open_session():
     resp = requests.get(url("/session"))
-    print see.see(resp)
     if resp.status_code == 200:
         return resp.json()['token']
     raise BaseException()
@@ -68,6 +65,7 @@ print "Templates:"
 print list_templates()
 
 token = open_session()
+print token
 
 set_property(token, {"Param": {
     "ElasticityModel": {
@@ -75,7 +73,9 @@ set_property(token, {"Param": {
         "gravity": 9.81,
         "lambda": 1020562,
         "mu": 22,
-    }}})
+    },
+    'Instationary': {'MaxTimeStepIts' : 2},
+    'Mesh':  {'Filename': "/homes/students/weigl/workspace1/restflow/tmp/logoz.vtu"}}})
 
 pprint.pprint(get_config(token))
 results = apply(token)

@@ -1,6 +1,6 @@
 __author__ = 'Alexander Weigl'
 
-RESULTS_DIR = "results_{run}/"
+RESULTS_DIR = "results_{run}"
 
 HF3_TEMPLATE_BASIC = {
     'Param': {

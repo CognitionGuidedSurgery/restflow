@@ -17,7 +17,7 @@ from flask_restful_swagger import swagger
 
 app = Flask(__name__)
 api = Api(app)
-api = swagger.docs(api, apiVersion='0.1', api_spec_url='/api/spec')
+api = swagger.docs(api, apiVersion='0.1', api_spec_url='/api/spec', basePath="http://i61p154.itec.uka.de:8002")
 
 SESSION = {}
 
@@ -196,11 +196,14 @@ class RunSimulation(Resource):
 
 from restflow import resultfunc
 
-
-class ResultList(Resource):
+class ResultFunctionsList(Resource):
     def get(self):
         return resultfunc._REGISTER.keys()
 
+def ResultList(Resource):
+    def get(self, token):
+        session = get_session(token)
+        return session.get_result_files()
 
 class Result(Resource):
     def get(self, token, step, func):
@@ -269,3 +272,4 @@ api.add_resource(RunSimulation, '/session/<string:token>/run')
 
 # Simulation
 api.add_resource(Result, '/session/<string:token>/result/<int:type>/<string:apply>')
+api.add_resource(ResultList, '/session/<string:token>/result/')

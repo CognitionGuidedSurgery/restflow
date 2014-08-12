@@ -28,21 +28,88 @@ import json
 
 import requests
 
+#!/usr/bin/python
+
+import json , requests, see, pprint
+
+class HTTPResponseError(BaseException):
+    def __init__(self, message, **kwargs):
+        super(HTTPResponseError, self).__init__(message)
+        self.__dict__.update(kwargs)
+
+class _LowLevel(object):
+    def __init__(self, url = "http://localhost:5000"):
+        self._base_url = url
+        self.session = requests.Session()
+
+    def url(self, path, *args,  **kwargs):
+        return self._base_url % (path.format(**kwargs))
+
+
+    def _handle_json(self, resp):
+        print resp.url
+        if resp.status_code == 200:
+            return resp.json()
+
+        raise HTTPResponseError("HTTPRequest answered with %d. Content: %s" % (resp.status_code, resp.text),
+                                response=resp)
+    def oneshot(self, *args, **kwargs):
+        resp = self.session.get(self.url(*args, **kwargs))
+        return self._handle_json(resp)
+
+
+    def open_session(self):
+        return self.oneshot("/session")
+
+    def close_session(self, token):
+        self.session.delete(self.url("/session/{token}", token = token))
+
+    def list_templates(self):
+        return self.oneshot("/template")
+
+    def get_template(self, name):
+        return self.oneshotl("/template/{name}", name=name)
+
+    def get_config(self, token):
+        return self.oneshotl("/session/{token}", token=token)
+
+    def set_config(self, token, hf3_config, bc_config):
+        resp = self.session.put(self.url("/session/{token}", token=token),
+                            data={'hf3': hf3_config, 'bc': bc_config})
+
+        return self._handle_json(resp)
+
+
+    def set_property(self,token, update, config='hf3'):
+        resp = self.session.post(self.url("/session/{token}", token=token),
+                             data={"update": json.dumps(update), "config": config})
+        return self._handle_json(resp)
+
+    def get_result_list(self, token):
+        return self.oneshot("/session/{token}/result")
+
+    def get_result(self, token, step, function, target):
+        from contextlib import closing
+        with open(target, 'wb') as fp:
+            with closing(requests.get(self.url('/session/{token}/result/{step}/{type}',
+                                               token = token, step = step, type = function), stream=True)) as r:
+                if r.status_code != 200:
+                    raise HTTPResponseError("status code is %d" % r.status_code)
+
+                fp.writelines(r.iter_lines())
+        return target
+
+    def apply(self, token):
+        resp = self.session.get(self.url("/session/{token}/run", token=token))
+        return self._handle_json(resp)
 
 class HiFlowRestClient(object):
     def __init__(self, url):
-        if not url.endswith('/'):
-            raise BaseException("url need trailing slash")
-
-        self.base_url = url
-
+        self._lowlevel = _LowLevel(url)
 
     def open_simulation(self):
-        r = requests.get(self.url("simulation/new"))
-        if r.status_code != 200:
-            raise BaseException("status_code != 200")
-        token = r.json()['token']
-        return Simulation(self, token)
+        token = self._lowlevel.open_session()
+        return Simulation(self._lowlevel, token)
 
     def upload_mesh(self, filename=None, url = None):
         if filename:
@@ -63,68 +130,68 @@ class HiFlowRestClient(object):
 
         return r.json()['filename']
 
-
-
-    def url(self, endpoint):
-        return self.base_url + endpoint
-
-
 class Simulation(object):
-    def __init__(self, client, token):
-        self.client = client
+    def __init__(self, lowlevel, token):
+        self._lowlevel = lowlevel
         self.token = token
 
-    def _get(self, endpoint):
-        r = requests.get(self.client.url(endpoint), params={"token": self.token})
-        if r.status_code != 200:
-            raise RestApiException("result is %d != 200, content=%s" % (
-                r.status_code, r.content))
-        return r
+        self._local_hf3 = None
+        self._local_bc  = None
+
+        self._persistent = False
+
     def __del__(self):
-        try:
-            self._get("simulation/clean")
-            # we should show any exception or else in destructor
-        except:
-            pass
+        if not self._persistent:
+            try:
+                self._lowlevel.close_session(self.token)
+                # we should show any exception or else in destructor
+            except:
+                pass
 
     @property
     def hf3(self):
-        r = self._get("simulation/hf3")
-        return r.json()
+        if self._local_hf3 is None:
+            self._retrieve_config()
+        return self._local_hf3
 
     @hf3.setter
     def hf3(self, value):
-        r = requests.put(self.client.url("simulation/hf3"),
-                          data={
-                              "token": self.token,
-                              "update": json.dumps(value)
-                          })
-        return r.json()
-
+        self._local_hf3 = value
 
     @property
     def bc(self):
-        r = self._get("simulation/bc")
-        return r.json()
+        if self._local_bc is None:
+            self._retrieve_config()
+        return self._local_bc
 
     @bc.setter
     def bc(self, value):
-        r = requests.put(self.client.url("simulation/bc"),
-                          data={
-                              "token": self.token,
-                              "update": json.dumps(value)
-                          })
-        return r.json()
+        self._local_hf3 = value
+
+    def _retrieve_config(self):
+        self._local_hf3, self._local_bc = self._lowlevel.get_config(self.token)
+
+    def _upload_config(self):
+        self._lowlevel.set_config(self.token, self._local_hf3, self._local_bc)
+
+    def __call__(self):
+        self._upload_config()
+        return self._lowlevel.apply(self.token)
+
+    def get_result_files(self):
+        return self._lowlevel.get_result_list(self.token)
+
+    def get_result_step(self):
+        f = self.get_result_files()
+        return range(len(f))
+
+    def get_result(self, step, function = 'vtu', target = None):
+        if not target:
+            import tempfile
+            target = tempfile.mktemp()
+        return self._lowlevel.get_result(self.token, step, function, target)
 
 
-    def __call__(self, steps, deltaT):
-        r = requests.get(self.client.url('simulation/run'),
-                         params={'token': self.token, 'steps': steps, 'deltaT': deltaT})
-        if r.status_code != 200:
-            print r.content
-            raise RestApiException()
-
-        return
 
 
 class RestApiException(BaseException): pass
