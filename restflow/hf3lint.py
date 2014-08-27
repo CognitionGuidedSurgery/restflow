@@ -374,6 +374,11 @@ class BCDataLint(_RuleDispatcher):
 
 
 def dictionfy(tree):
+    """Creates a dictionary structure from a simple xml tree.
+
+    :param tree: lxml.etree._Element
+    :rtype: dict
+    """
     if tree.text is not None:
         return {tree.tag: tree.text}
     else:
@@ -385,10 +390,19 @@ def dictionfy(tree):
 
 
 _COLOR_TABLE = {'I': 94, 'W': 33, 'E': 31, 'D': 90, 'F': 35}
+"""Report type to terminal color table"""
+
 _FORMAT = "{color}{type}-{number}: {msg} {grey}{path}{nocolor}"
+"""format of terminal output"""
 
 
 def read_xml(filename):
+    """Reads an xml file
+    :param filename: path to a xml file
+    :type filename: str
+    :returns: a dict structure
+    :rtype: dict
+    """
     import lxml.etree
     with open(filename) as fp:
         parser = lxml.etree.XMLParser(remove_blank_text=True, remove_pis=True, remove_comments=True)
@@ -396,6 +410,12 @@ def read_xml(filename):
         return dictionfy(tree.getroot())
 
 def print_report(report):
+    """Print the report
+
+    :param report: list of Entry
+    :return: None
+    :rtype: None
+    """
     for r in report:
         assert isinstance(r, Entry)
         color = _COLOR_TABLE.get(r.level, 33)
@@ -410,34 +430,47 @@ def print_report(report):
         )
 
 def lint_bc(data):
-    """
+    """Analyze the bc data structure `data`.
 
-    :param data:
+    :param data: bc data structure
     :type data: dict
-    :return:
+    :return: the report
+    :rtype: list[Entry]
     """
     checker = BCDataLint()
     report = checker.validate(data)
     return report
 
 def lint_hf3(data):
-    """
+    """Analyze the hf3 data structure
 
-    :param data:
+    :param data: hf3 data structure
     :type data: dict
-    :return:
+    :return: the report
+    :rtype: list[Entry]
     """
     checker = HF3DataLint()
     report = checker.validate(data)
     return report
 
 
-
 def lint_bc_file(filename):
+    """Lint the given filename as bc data structure and prints the result
+
+    :param filename: path to xml
+    :type filename: str
+    :return: None
+    """
     print "Filename", filename, "check BCdata"
     print_report(lint_bc(read_xml(filename)))
 
 def lint_hf3_file(filename):
+    """Lint the given filename as hf3 data structure and prints the result
+
+    :param filename: path to xml
+    :type filename: str
+    :return: None
+    """
     print "Filename", filename, "check HF3"
     print_report(lint_hf3(read_xml(filename)))
 

@@ -14,35 +14,38 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Client for restflow
+"""Client for restflow
 
 
 """
 
 __author__ = "Alexander Weigl <uiduw@student.kit.edu>"
-__date__   = "2014-07-11"
+__date__ = "2014-07-11"
 
+#!/usr/bin/python
 
 import json
 
 import requests
 
-#!/usr/bin/python
-
-import json , requests, see, pprint
 
 class HTTPResponseError(BaseException):
     def __init__(self, message, **kwargs):
         super(HTTPResponseError, self).__init__(message)
         self.__dict__.update(kwargs)
 
+
 class _LowLevel(object):
-    def __init__(self, url = "http://localhost:5000"):
+    """Low level operation on the rest api.
+    This class does not hold any, just a configured ..py:class:`requests.Session`
+
+    """
+
+    def __init__(self, url="http://localhost:5000"):
         self._base_url = url
         self.session = requests.Session()
 
-    def url(self, path, *args,  **kwargs):
+    def url(self, path, *args, **kwargs):
         return self._base_url % (path.format(**kwargs))
 
 
@@ -53,7 +56,9 @@ class _LowLevel(object):
 
         raise HTTPResponseError("HTTPRequest answered with %d. Content: %s" % (resp.status_code, resp.text),
                                 response=resp)
+
     def oneshot(self, *args, **kwargs):
+        """Simple HTTP GET request with json response data"""
         resp = self.session.get(self.url(*args, **kwargs))
         return self._handle_json(resp)
 
@@ -62,27 +67,27 @@ class _LowLevel(object):
         return self.oneshot("/session")
 
     def close_session(self, token):
-        self.session.delete(self.url("/session/{token}", token = token))
+        self.session.delete(self.url("/session/{token}", token=token))
 
     def list_templates(self):
         return self.oneshot("/template")
 
     def get_template(self, name):
-        return self.oneshotl("/template/{name}", name=name)
+        return self.oneshot("/template/{name}", name=name)
 
     def get_config(self, token):
-        return self.oneshotl("/session/{token}", token=token)
+        return self.oneshot("/session/{token}", token=token)
 
     def set_config(self, token, hf3_config, bc_config):
         resp = self.session.put(self.url("/session/{token}", token=token),
-                            data={'hf3': hf3_config, 'bc': bc_config})
+                                data={'hf3': hf3_config, 'bc': bc_config})
 
         return self._handle_json(resp)
 
 
-    def set_property(self,token, update, config='hf3'):
+    def set_property(self, token, update, config='hf3'):
         resp = self.session.post(self.url("/session/{token}", token=token),
-                             data={"update": json.dumps(update), "config": config})
+                                 data={"update": json.dumps(update), "config": config})
         return self._handle_json(resp)
 
     def get_result_list(self, token):
@@ -90,9 +95,10 @@ class _LowLevel(object):
 
     def get_result(self, token, step, function, target):
         from contextlib import closing
+
         with open(target, 'wb') as fp:
             with closing(requests.get(self.url('/session/{token}/result/{step}/{type}',
-                                               token = token, step = step, type = function), stream=True)) as r:
+                                               token=token, step=step, type=function), stream=True)) as r:
                 if r.status_code != 200:
                     raise HTTPResponseError("status code is %d" % r.status_code)
 
@@ -103,7 +109,14 @@ class _LowLevel(object):
         resp = self.session.get(self.url("/session/{token}/run", token=token))
         return self._handle_json(resp)
 
+
 class HiFlowRestClient(object):
+    """High level api for restflow services
+
+    :param url: the base url for the service, eg. http://localhost:5000
+    :type url: str
+    """
+
     def __init__(self, url):
         self._lowlevel = _LowLevel(url)
 
@@ -111,7 +124,18 @@ class HiFlowRestClient(object):
         token = self._lowlevel.open_session()
         return Simulation(self._lowlevel, token)
 
-    def upload_mesh(self, filename=None, url = None):
+    def upload_mesh(self, filename=None, url=None):
+        """Uploads the given mesh file, or request a download of `url` from the service.
+
+
+        :param filename: uploads the given the to the server
+        :type filename: str
+        :param url: server will download the file behind tis URL
+        :type url: str
+
+        :return: a identifier of the new created file on the server
+        :rtype: str
+        """
         if filename:
             import os.path
             from requests_toolbelt import MultipartEncoder
@@ -126,17 +150,21 @@ class HiFlowRestClient(object):
                               data=m, headers={'Content-Type': m.content_type})
 
         elif url:
-            r = requests.get(self.url("asset"), params={'url':url})
+            r = requests.get(self.url("asset"), params={'url': url})
 
         return r.json()['filename']
 
+
 class Simulation(object):
+    """The simulation is a Hiflow3Session on the server.
+    You should not directly create this, ask ..py:meth:`HiFlowRestClient.open_simulation` instead.
+    """
     def __init__(self, lowlevel, token):
         self._lowlevel = lowlevel
         self.token = token
 
         self._local_hf3 = None
-        self._local_bc  = None
+        self._local_bc = None
 
         self._persistent = False
 
@@ -185,13 +213,12 @@ class Simulation(object):
         f = self.get_result_files()
         return range(len(f))
 
-    def get_result(self, step, function = 'vtu', target = None):
+    def get_result(self, step, function='vtu', target=None):
         if not target:
             import tempfile
+
             target = tempfile.mktemp()
         return self._lowlevel.get_result(self.token, step, function, target)
-
-
 
 
 class RestApiException(BaseException): pass
