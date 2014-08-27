@@ -68,7 +68,7 @@ def update_meshfile(f):
     """Returns a dictionary fragment for updating the mesh filename in hf3.
 
     :param f: filename of mesh file
-    :param f: str
+    :type f: str
     :rtype: dict
     """
     return {'Param': {'Mesh': {'Filename': f}}}
@@ -78,7 +78,7 @@ def update_output_folder(folder):
     """Returns a fragment for updating the output folder in hf3.
 
     :param folder: folder path
-    :param folder: str
+    :type folder: str
     :rtype: dict
     """
     if not folder.endswith("/"):

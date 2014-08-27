@@ -12,9 +12,9 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program. If not, see http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-__author__ = "Alexander Weigl uiduw@student.kit.edu>"
+__author__ = "Alexander Weigl <uiduw@student.kit.edu>"
 __date__ = "2014-07-10"
 
 try:
