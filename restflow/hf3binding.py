@@ -1,3 +1,4 @@
+#-*- encoding: utf-8 -*-
 # Copyright (C) 2013-2014 Alexander Weigl, Nicolai Schoch
 #
 # This program is free software: you can redistribute it and/or modify
