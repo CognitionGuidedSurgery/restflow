@@ -1,0 +1,29 @@
+<Param>
+ <BCData>
+  
+  <DisplacementConstraintsBCs>
+    <NumberOfDisplacedDirichletPoints>8</NumberOfDisplacedDirichletPoints>
+	<dDPoints>
+		-12.3261, -3.492, -0.795779;
+		-13.8117,  2.258, -0.891691;
+		-12.3261, -3.492,  6.04453;
+		-13.8117,  2.258,  6.773051;
+		12.8679,  -3.492, -0.795779;
+		14.4188,   2.258, -0.8916911;
+		12.8679,  -3.492,  6.044531;
+		14.4188,   2.258,  6.773051
+	</dDPoints>
+	<dDisplacements>
+		0.0, 0.0, -10;
+		0.0, 0.0, -10;
+		0.0, 0.0, -10;
+		0.0, 0.0, -10;
+		0.0, 0.0, -10;
+		0.0, 0.0, -10;
+		0.0, 0.0, -10;
+		0.0, 0.0, -10
+	</dDisplacements>
+  </DisplacementConstraintsBCs>
+ </BCData>
+</Param>
+
