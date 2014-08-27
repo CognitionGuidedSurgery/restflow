@@ -200,7 +200,7 @@ class ResultFunctionsList(Resource):
     def get(self):
         return resultfunc._REGISTER.keys()
 
-def ResultList(Resource):
+class ResultList(Resource):
     def get(self, token):
         session = get_session(token)
         return session.get_result_files()
@@ -262,7 +262,7 @@ api.add_resource(TemplateList, '/template')
 api.add_resource(Template, '/template/<string:type>')
 api.add_resource(Assets, '/assets')
 api.add_resource(Assets2, '/assets/<string:aid>')
-api.add_resource(ResultList, '/results')
+api.add_resource(ResultFunctionsList, '/results')
 
 
 # Session Management
