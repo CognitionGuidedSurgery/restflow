@@ -12,7 +12,7 @@ try:
         elif filename.endswith(".vtu"):
             reader = vtk.vtkUnstructuredGridReader()
         else:
-            raise BaseException("Illegal filanem suffix %s" % filename)
+            raise BaseException("Illegal filename suffix %s" % filename)
 
         reader.SetFileName(filename)
         reader.Update()
@@ -44,7 +44,7 @@ try:
         writer.Write()
 
     def write_vtu(ugrid, filename, mode = 'ascii'):
-        writer = vtk.vtkXmlUnstructuredGridWriter()
+        writer = vtk.vtkXMLUnstructuredGridWriter()
         if mode == 'ascii':
             writer.SetDataModeToAscii()
         elif mode == 'binary':

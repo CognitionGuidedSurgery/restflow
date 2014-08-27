@@ -287,9 +287,9 @@ class HF3DataLint(_RuleDispatcher):
 class BCDataLint(_RuleDispatcher):
     def _check_points_format(self, path, points):
         for vector in points.split(";"):
-            nums = vector.split(",")
+            nums = vector.strip().split(",")
             if len(nums) != 3:
-                self.add_error("The vector %s does not have exact 3 components" % vector, path)
+                self.add_error("The vector %s does not have exact 3 components" % vector.strip(), path)
 
             for n in nums:
                 t, msg = Checkers.is_float(n.strip())
@@ -374,8 +374,7 @@ class BCDataLint(_RuleDispatcher):
 
 
 def dictionfy(tree):
-    text = tree.text.strip()
-    if text != "":
+    if tree.text is not None:
         return {tree.tag: tree.text}
     else:
         d = {}
@@ -393,7 +392,7 @@ def read_xml(filename):
     import lxml.etree
     with open(filename) as fp:
         parser = lxml.etree.XMLParser(remove_blank_text=True, remove_pis=True, remove_comments=True)
-        tree = lxml.etree.parse(fp)
+        tree = lxml.etree.parse(fp, parser=parser)
         return dictionfy(tree.getroot())
 
 def print_report(report):
@@ -447,5 +446,17 @@ if __name__ == "__main__":
     #for path, fn in HF3DataLint._build_rules_from_fields():
     #        print '.'.join(path), fn
 
-    lint_bc_file("bc_000.xml")
-    lint_hf3_file("hf3_000.xml")
+    import docopt
+
+    doc = """
+    Usage:
+        hf3lint.py hf3 <file>
+        hf3lint.py bc <file>
+    """
+
+    d = docopt.docopt(doc)
+
+    if d['hf3']:
+        lint_hf3_file(d["<file>"])
+    else:
+        lint_bc_file(d["<file>"])

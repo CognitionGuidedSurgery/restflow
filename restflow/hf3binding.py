@@ -23,7 +23,7 @@ from path import path
 from .hf3configs import *
 from config import *
 
-SOLUTION_FILENAME = "_solution_np{np}_RefLvl{rlvl}_Tstep.{step}.pvtu"
+SOLUTION_FILENAME = "_deformedSolution_np{np}_RefLvl{rlvl}_Tstep.{step}.pvtu"
 
 
 def generate_update(func):
@@ -40,10 +40,12 @@ def update_bcdata(bcfilename):
     return {'Param': {'Mesh': {'BCdataFilename': bcfilename}}}
 
 def update_meshfile(f):
-    return {'Param': {'Mesh': {'MeshFilename': f}}}
+    return {'Param': {'Mesh': {'Filename': f}}}
 
 
 def update_output_folder(folder):
+    if not folder.endswith("/"):
+        folder += "/"
     return {'Param': {'OutputPathAndPrefix': folder}}
 
 
@@ -78,7 +80,6 @@ class Hiflow3Session(object):
 
 
      """
-
     def __init__(self, working_dir):
         self._working_dir = path(working_dir)
         self._hf3 = HF3_TEMPLATE_BASIC
@@ -155,7 +156,7 @@ class Hiflow3Session(object):
 
         if self._run > 1:
             # set the meshfile from last run
-            oldmesh = self.get_result(self._step - 1)
+            oldmesh = self.get_result(self._step)
             newmesh = self.working_dir / "input_{step}.vtu".format(step = self._run)
             write_vtu(read_ugrid(oldmesh), newmesh)
             self.update_hf3(update_meshfile(newmesh))
@@ -180,8 +181,14 @@ class Hiflow3Session(object):
         import StringIO
 
         try:
+            #proc = subprocess.Popen(
+                #[ELASTICITY_PROGRAM, hf3file],
+                #stdout=subprocess.PIPE,
+                #stderr=subprocess.STDOUT)
+
             proc = subprocess.Popen(
-                [ELASTICITY_PROGRAM, hf3file],
+                ["mpirun", "-np", "8",
+                 ELASTICITY_PROGRAM, hf3file],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT)
 
@@ -198,7 +205,7 @@ class Hiflow3Session(object):
         except OSError as e:
             raise e #TODO
 
-        steps = self.hf3['Param']['Instationary']['MaxTimeStepIts']
+        steps = int(self.hf3['Param']['Instationary']['MaxTimeStepIts'])
         new_steps = range(1 + self._step, 1 + steps)
         self._step += steps
         return new_steps
