@@ -1,4 +1,21 @@
-__author__ = 'weigl'
+#
+# Copyright (C) 2013-2014 Alexander Weigl, Nicolai Schoch
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see http://www.gnu.org/licenses/>.
+
+__author__ = "Alexander Weigl uiduw@student.kit.edu>"
+__date__ = "2014-07-10"
 
 try:
     import vtk
@@ -100,6 +117,11 @@ def merge_dict(base, update):
 
 
 def dict_to_xml(map):
+    """
+
+    :param map:
+    :return:
+    """
     r = ""
     for key, value in map.items():
         if isinstance(value, dict):
@@ -120,11 +142,10 @@ def generate_id():
 def indent(string, prefix="   "):
     """indent the given string by `prefix`
 
-        :param str string: the string to indent
-        :param str prefix: the indent characters
+    :param str string: the string to indent
+    :param str prefix: the indent characters
 
-
-        >>> indent("a\nb\nc")
-        "    a\n    b\n    c\n"
+    >>> indent("a\nb\nc")
+    "    a\n    b\n    c\n"
     """
     return prefix + string.replace("\n", "\n"+prefix)
