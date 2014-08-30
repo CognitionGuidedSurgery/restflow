@@ -25,7 +25,7 @@ __date__ = "2014-07-11"
 #!/usr/bin/python
 
 import json
-
+from .base import AbstractHf3Session
 import requests
 
 
@@ -42,7 +42,7 @@ class _LowLevel(object):
     """
 
     def __init__(self, url="http://localhost:5000"):
-        self._base_url = url
+        self._base_url = url+"%s"
         self.session = requests.Session()
 
     def url(self, path, *args, **kwargs):
@@ -54,7 +54,7 @@ class _LowLevel(object):
         if resp.status_code == 200:
             return resp.json()
 
-        raise HTTPResponseError("HTTPRequest answered with %d. Content: %s" % (resp.status_code, resp.text),
+        raise HTTPResponseError("HTTPRequest %s answered with %d. Content: %s" % (resp.url, resp.status_code, resp.text),
                                 response=resp)
 
     def oneshot(self, *args, **kwargs):
@@ -64,7 +64,7 @@ class _LowLevel(object):
 
 
     def open_session(self):
-        return self.oneshot("/session")
+        return self.oneshot("/session")['token']
 
     def close_session(self, token):
         self.session.delete(self.url("/session/{token}", token=token))
@@ -76,11 +76,13 @@ class _LowLevel(object):
         return self.oneshot("/template/{name}", name=name)
 
     def get_config(self, token):
-        return self.oneshot("/session/{token}", token=token)
+        c =  self.oneshot("/session/{token}", token=token)
+        return c['hf3'], c['bc']
 
     def set_config(self, token, hf3_config, bc_config):
         resp = self.session.put(self.url("/session/{token}", token=token),
-                                data={'hf3': hf3_config, 'bc': bc_config})
+                                data={'hf3': json.dumps(hf3_config),
+                                      'bc': json.dumps(bc_config)})
 
         return self._handle_json(resp)
 
@@ -102,7 +104,10 @@ class _LowLevel(object):
                 if r.status_code != 200:
                     raise HTTPResponseError("status code is %d" % r.status_code)
 
-                fp.writelines(r.iter_lines())
+                for line in r.iter_lines():
+                    fp.write(line)
+                    fp.write("\n")
+
         return target
 
     def apply(self, token):
@@ -155,17 +160,18 @@ class HiFlowRestClient(object):
         return r.json()['filename']
 
 
-class Simulation(object):
+class Simulation(AbstractHf3Session):
     """The simulation is a Hiflow3Session on the server.
     You should not directly create this, ask ..py:meth:`HiFlowRestClient.open_simulation` instead.
     """
     def __init__(self, lowlevel, token):
+        super(Simulation, self).__init__()
+
+        self.hf3 = None
+        self.bc = None
+
         self._lowlevel = lowlevel
         self.token = token
-
-        self._local_hf3 = None
-        self._local_bc = None
-
         self._persistent = False
 
     def __del__(self):
@@ -176,33 +182,28 @@ class Simulation(object):
             except:
                 pass
 
-    @property
+    @AbstractHf3Session.hf3.getter
     def hf3(self):
-        if self._local_hf3 is None:
+        hf3 = super(Simulation, self).hf3
+        if  hf3 is None:
             self._retrieve_config()
-        return self._local_hf3
+        return super(Simulation, self).hf3
 
-    @hf3.setter
-    def hf3(self, value):
-        self._local_hf3 = value
-
-    @property
+    @AbstractHf3Session.bc.getter
     def bc(self):
-        if self._local_bc is None:
+        bc = super(Simulation, self).bc
+        if bc is None:
             self._retrieve_config()
-        return self._local_bc
+        return super(Simulation, self).bc
 
-    @bc.setter
-    def bc(self, value):
-        self._local_hf3 = value
 
     def _retrieve_config(self):
-        self._local_hf3, self._local_bc = self._lowlevel.get_config(self.token)
+        self.hf3, self.bc = self._lowlevel.get_config(self.token)
 
     def _upload_config(self):
-        self._lowlevel.set_config(self.token, self._local_hf3, self._local_bc)
+        self._lowlevel.set_config(self.token, self.hf3, self.bc)
 
-    def __call__(self):
+    def run(self):
         self._upload_config()
         return self._lowlevel.apply(self.token)
 

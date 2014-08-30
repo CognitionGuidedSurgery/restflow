@@ -1,0 +1,77 @@
+<Param>
+    <OutputPathAndPrefix>SimResults/elasticitySimulation_</OutputPathAndPrefix>
+
+    <Mesh>
+        <Filename>/home/schoch/HiFlow3_Project/MSML/msml/examples/ZotherExamples/quaderVMesh.vtk_auto_converted.vtu</Filename>
+        <BCdataFilename>quader.msml_beam_initial_def_1.bc.xml</BCdataFilename>
+        <InitialRefLevel>0</InitialRefLevel>
+    </Mesh>
+
+    <LinearAlgebra>
+        <Platform>CPU</Platform>
+        <NumParaProcCPU>4</NumParaProcCPU>
+        <Implementation>Naive</Implementation>
+        <MatrixFormat>CSR</MatrixFormat>
+        <NumRefLevels>1</NumRefLevels>
+    </LinearAlgebra>
+
+    
+    <ElasticityModel> <!-- e.g.: average soft tissue (CJP-2012), MV-tissue (Mansi-2012), brain-tissue (Miller) -->
+<!--        <materialid></materialid> -->
+        <density>1.000</density>
+        <lambda>56927.8673835</lambda> <!-- e.g.: 259259(PR=.35), 28466-40666-56933(PR=.488), 49329(PR=.49) -->
+        <mu>1399.8655914</mu> <!-- e.g.: 111111(PR=.35), 700-1000-1400(PR=.488), 1007(PR=.49) -->
+        <gravity>-9.81</gravity>
+    </ElasticityModel>
+    
+
+    <QuadratureOrder>2</QuadratureOrder>
+
+    <FiniteElements>
+        <DisplacementDegree>1</DisplacementDegree>
+    </FiniteElements>
+
+    <Instationary>
+        
+        <SolveInstationary>1</SolveInstationary>
+        <DampingFactor>1.0</DampingFactor>
+        <RayleighAlpha>0.2</RayleighAlpha>
+        <RayleighBeta>0.4</RayleighBeta>
+        <Method>Newmark</Method>
+        <DeltaT>0.05</DeltaT>
+        <MaxTimeStepIts>20</MaxTimeStepIts>
+        
+    </Instationary>
+
+    <Boundary>
+        <DirichletMaterial1>12345</DirichletMaterial1> <!-- fixed boundary -->
+        <DirichletMaterial2>12345</DirichletMaterial2> <!-- displaced boundary -->
+        <DirichletMaterial3>12345</DirichletMaterial3> <!-- displaced boundary -->
+        <NeumannMaterial1>12345</NeumannMaterial1> <!-- (lower) boundary under pressure -->
+        <NeumannMaterial1Pressure>1234567</NeumannMaterial1Pressure>
+        <NeumannMaterial2>12345</NeumannMaterial2> <!-- (upper) boundary under pressure -->
+        <NeumannMaterial2Pressure>1234567</NeumannMaterial2Pressure>
+    </Boundary>
+
+    <LinearSolver>
+        <SolverName>CG</SolverName>
+        <MaximumIterations>1000</MaximumIterations>
+        <AbsoluteTolerance>1.e-8</AbsoluteTolerance>
+        <RelativeTolerance>1.e-20</RelativeTolerance>
+        <DivergenceLimit>1.e6</DivergenceLimit>
+        <BasisSize>1000</BasisSize>
+        <Preconditioning>1</Preconditioning>
+        <PreconditionerName>SGAUSS_SEIDEL</PreconditionerName>
+        <Omega>2.5</Omega>
+        <ILU_p>2.5</ILU_p>
+    </LinearSolver>
+
+    <ILUPP>
+        <PreprocessingType>0</PreprocessingType>
+        <PreconditionerNumber>11</PreconditionerNumber>
+        <MaxMultilevels>20</MaxMultilevels>
+        <MemFactor>0.8</MemFactor>
+        <PivotThreshold>2.75</PivotThreshold>
+        <MinPivot>0.05</MinPivot>
+    </ILUPP>
+</Param>

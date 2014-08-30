@@ -63,14 +63,14 @@ print session.run()
 
 
 # renaming files for paraview
-import restflow.utils
+import restflow.vtkfunctions
 files = sorted(session.get_result_files())
 output = session.working_dir / "output"
 output.makedirs_p()
 
 for i, f in enumerate(files):
-    restflow.utils.write_vtu(
-        restflow.utils.read_ugrid(f),
+    restflow.vtkfunctions.write_vtu(
+        restflow.vtkfunctions.read_ugrid(f),
         output/"mesh_%04d.vtu" % i)
 
 

@@ -14,11 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+"""Configuration
+
+
+"""
 
 __author__ = 'Alexander Weigl'
 
-import os, sys
-from path import path
+import os
 
 ELASTICITY_PROGRAM = os.environ.get("ELASTICIY",
                                     "/home/weigl/workspace/hiflow_1.4/build/examples/elasticity/elasticity")
+"""Path to the elasticity executable. If $ELASTICITY is set in the environment, it will be taken"""
+
+
+BIND_SOCKET = os.environ.get('RESTFLOW_BIND', "0.0.0.0")
+PORT        = os.environ.get('RESTFLOW_PORT', "8002")
+BASE_PATH   = os.environ.get("RESTFLOW_BASE_PATH", "http://%s:%s/" %(BIND_SOCKET, PORT))

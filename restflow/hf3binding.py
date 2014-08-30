@@ -1,4 +1,4 @@
-#-*- encoding: utf-8 -*-
+# -*- encoding: utf-8 -*-
 # Copyright (C) 2013-2014 Alexander Weigl, Nicolai Schoch
 #
 # This program is free software: you can redistribute it and/or modify
@@ -17,14 +17,12 @@
 
 __author__ = 'Alexander Weigl'
 
-import functools
-import os
 import subprocess
-from collections import defaultdict
 
-from utils import *
+from vtkfunctions import *
 from .hf3configs import *
 from config import *
+from .base import  *
 
 
 SOLUTION_FILENAME = "_deformedSolution_np{np}_RefLvl{rlvl}_Tstep.{step}.pvtu"
@@ -37,78 +35,6 @@ Filename is parameterized by:
 """
 
 
-def generate_update(func):
-    """
-
-    :param func:
-    :return:
-    """
-
-    def fn(*args, **kwargs):
-        d = dstruct()
-        func(d, *args, **kwargs)
-        return d
-
-    functools.update_wrapper(fn, func)
-    return fn
-
-
-def update_bcdata(bcfilename):
-    """Returns a dictionary fragment for updating the bcdata field.
-
-    :param bcfilename: filename to the bcdata file
-    :type bcfilename: str
-    :return: a dictionary
-    :rtype: dict
-    """
-    return {'Param': {'Mesh': {'BCdataFilename': bcfilename}}}
-
-
-def update_meshfile(f):
-    """Returns a dictionary fragment for updating the mesh filename in hf3.
-
-    :param f: filename of mesh file
-    :type f: str
-    :rtype: dict
-    """
-    return {'Param': {'Mesh': {'Filename': f}}}
-
-
-def update_output_folder(folder):
-    """Returns a fragment for updating the output folder in hf3.
-
-    :param folder: folder path
-    :type folder: str
-    :rtype: dict
-    """
-    if not folder.endswith("/"):
-        folder += "/"
-    return {'Param': {'OutputPathAndPrefix': folder}}
-
-
-def update_runtime_informations(steps, duration):
-    """Returns a fragment for updating the amount of steps and duration of a step.
-
-    :param steps: amount of steps to take
-    :type steps: float
-    :param duration: duration (delta time) of a step
-    :type duration: float
-    :rtype: dict
-    """
-    return {'Param': {'Instationary': None}}
-
-
-class dstruct(defaultdict):
-    """A magic class, that creates new config entries on access.
-    """
-    def __init__(self):
-        super(dstruct, self).__init__(lambda: dstruct())
-
-    def __setattr__(self, key, item): self[key] = item
-
-    def __getattr__(self, key): return self[key]
-
-
 def md(*args):
     """creates an directory silently"""
     try:
@@ -117,7 +43,7 @@ def md(*args):
         if e.errno != 17: raise e
 
 
-class Hiflow3Session(object):
+class Hiflow3Session(AbstractHf3Session):
     """This class handles session of the elasticity executable.
 
     * It holds both configuration files (bcdata and hf3data) in memory.
@@ -126,6 +52,7 @@ class Hiflow3Session(object):
      """
 
     def __init__(self, working_dir):
+        super(Hiflow3Session, self).__init__()
         self._working_dir = path(working_dir)
         self._hf3 = HF3_TEMPLATE_BASIC
         self._bc = BCDATA_TEMPLATE_BASIC
@@ -147,41 +74,7 @@ class Hiflow3Session(object):
     def working_dir(self, wd):
         self._working_dir = wd
 
-    @property
-    def hf3(self):
-        """hf3 data structure (environment, solver settings)"""
-        return self._hf3
 
-    @hf3.setter
-    def hf3(self, new_value):
-        self._hf3 = new_value
-
-    @property
-    def bc(self):
-        """bc data structure (constraints"""
-        return self._bc
-
-    @bc.setter
-    def bc(self, value):
-        self._bc = value
-
-    def update_hf3(self, to_merged):
-        """update the hf3 data structure with the given fragment
-
-        :param to_merged: fragment for update
-        :type to_merged: dict
-        :return: None
-        """
-        self.hf3 = merge_dict(self.hf3, to_merged)
-
-    def update_bc(self, to_merged):
-        """update the bc data structure with the given fragment
-
-        :param to_merged: fragment for update
-        :type to_merged: dict
-        :return: None
-        """
-        self.bc = merge_dict(self.bc, to_merged)
 
     def get_result_files(self):
         """Returns all result files after `SOLUTION_FILENAME`

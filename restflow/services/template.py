@@ -1,4 +1,4 @@
-#
+# -*- encoding: utf-8 -*-
 # Copyright (C) 2013-2014 Alexander Weigl, Nicolai Schoch
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,21 +14,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
+__author__ = 'Alexander Weigl'
 
-""" restflow
-
-restflow provides functionalities to work with Hiflow3-Simulation.
-
-You can work locally via ..py:mod:`restflow.hf3binding` or remotely
-..py:mod:`restflow.sever` ..py:mod:`restflow.client`.
+from flask.ext.restful import Resource, abort
+from .. import hf3configs
 
 
-"""
 
-__author__ = "Alexander Weigl <uiduw@student.kit.edu>"
-__date__   = "2014-08-30"
-__version__ = "0.8-beta"
+TEMPLATES = {
+    'hf3': hf3configs.HF3_TEMPLATE_BASIC,
+    'bc': hf3configs.BCDATA_TEMPLATE_BASIC,
+}
+"""Configuration templates"""
 
-from .base import *
+
+
+
+class TemplateList(Resource):
+    def get(self):
+        """Returns a list of registered templates
+        :return:
+        """
+        return TEMPLATES.keys()
+
+
+class Template(Resource):
+    def get(self, type):
+        try:
+            return TEMPLATES[type]
+        except:
+            return abort(501, "Type %s not valid")
 

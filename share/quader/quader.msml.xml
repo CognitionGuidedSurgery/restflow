@@ -1,0 +1,87 @@
+<msml:msml xmlns:msml="http://sfb125.de/msml"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://sfb125.de/msml ../../test.xsd">
+
+    <variables>
+        <var name="input_vol_mesh" value="quaderVMesh.vtk" logical="Mesh"
+             physical="file.vtk"/>
+        <var name="input_surf_mesh" value="quaderSurfaceBinary.vtk" logical="linearMesh"
+             physical="file.vtk"/>
+    </variables>
+
+    <scene>
+        <object id="beam">
+            <mesh>
+                <linearTet id="beamMesh" mesh="${beamVolumeMesher}"/>
+            </mesh>
+
+            <sets>
+                <nodes>
+                    <indexgroup id="constraintRegion1" indices="${bottomToIndexGroup}"/>
+                    <indexgroup id="constraintRegion2" indices="${topToIndexGroup}"/>
+                </nodes>
+                <elements>
+                    <indexgroup id="bodyRegion" indices="${bodyToIndexGroup}"/>
+                </elements>
+                <surfaces>
+                    <indexgroup id="constraintRegionSurfaces1" indices="${bottomToIndexGroup}"/>
+                    <indexgroup id="constraintRegionSurfaces2" indices="${topToIndexGroup}"/>
+                </surfaces>
+            </sets>
+
+            <material>
+                <region id="beamMaterial" indices="${bodyToIndexGroup}">
+                    <linearElasticMaterial youngModulus="4166" poissonRatio="0.488"/>
+                    <mass name="beam" massDensity="1.000"/>
+                </region>
+            </material>
+
+            <constraints>
+                <constraint name="bodyConstraint" forStep="${initial_def_1}">
+                    <fixedConstraint time="0" indices="${bottomToIndexGroup}"/>
+                    <fixedConstraint time="0" indices="${topToIndexGroup}"/>
+                </constraint>
+                <constraint name="bodyConstraint" forStep="${subsequent_def_2}">
+                    <fixedConstraint time="0" indices="${bottomToIndexGroup}"/>
+                    <displacementConstraint time="0" indices="${topToIndexGroup}" displacement="1.0 0.0 0.0"/>
+                </constraint>
+            </constraints>
+
+            <output>
+                <displacement id="liver" timestep="1"/>
+            </output>
+        </object>
+    </scene>
+
+    <workflow>
+
+        <mesherCGALs2v id="beamVolumeMesher" meshFilename="${input_vol_mesh}" surfaceMesh="${input_surf_mesh}"
+                       preserveFeatures="true" facet_angle="30" facet_size="0.2" facet_distance="0.3"
+                       cell_radius_edge_ratio="3" cell_size="0.2" odt="false" lloyd="false" pertube="true"
+                       exude="true"/>
+
+        <boxROIToIndexOperator id="bodyToIndexGroup"
+                               box="-5.1 -0.55 -0.55 5.1 0.55 0.55" mesh="${beamVolumeMesher}"
+                               select="elements"/>
+
+        <boxROIToIndexOperator id="bottomToIndexGroup"
+                               box="-5.1 -0.55 -0.55 -4.9 0.55 0.55" mesh="${beamVolumeMesher}"
+                               select="points"/>
+
+        <boxROIToIndexOperator id="topToIndexGroup"
+                               box="4.9 -0.55 -0.55 5.1 0.55 0.55" mesh="${beamVolumeMesher}"
+                               select="points"/>
+
+    </workflow>
+
+
+    <environment>
+        <solver linearSolver="CG" preconditioner="SGAUSS_SEIDEL" processingUnit="CPU" numParallelProcessesOnCPU="4" 
+                timeIntegration="Newmark" dampingRayleighRatioMass="0.3" dampingRayleighRatioStiffness="0.4"/>
+        <simulation>
+            <step name="initial_def_1" dt="0.05" iterations="20"/>
+            <step name="subsequent_def_2" dt="0.05" iterations="20"/>
+        </simulation>
+    </environment>
+
+</msml:msml>

@@ -20,7 +20,7 @@ from path import path
 
 __all__ = [
     "make_result", "register_result", "get_result",
-    "get_stl", "get_vtk", "get_vtp", "get_vtu"
+    "get_stl", "get_vtk", "get_vtp", "vtu"
 ]
 
 _REGISTER = {}
@@ -35,7 +35,7 @@ def get_result(name):
 def register_result(name=None, function=None):
     def fn(func):
         n = name or function.__name__
-        _REGISTER[n] = function
+        _REGISTER[n] = func
 
     if function:
         fn(function)
@@ -45,7 +45,7 @@ def register_result(name=None, function=None):
 
 import tempfile
 
-from .utils import *
+from .vtkfunctions import *
 
 
 @register_result("vtu")

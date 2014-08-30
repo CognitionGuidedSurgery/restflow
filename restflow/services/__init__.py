@@ -1,4 +1,4 @@
-#
+# -*- encoding: utf-8 -*-
 # Copyright (C) 2013-2014 Alexander Weigl, Nicolai Schoch
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,21 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
-""" restflow
-
-restflow provides functionalities to work with Hiflow3-Simulation.
-
-You can work locally via ..py:mod:`restflow.hf3binding` or remotely
-..py:mod:`restflow.sever` ..py:mod:`restflow.client`.
-
+"""Rest Resources.
 
 """
 
-__author__ = "Alexander Weigl <uiduw@student.kit.edu>"
-__date__   = "2014-08-30"
-__version__ = "0.8-beta"
+__author__ = 'Alexander Weigl'
 
-from .base import *
-
+from .assets import *
+from .results import *
+from .session import *
+from .template import *
