@@ -1,5 +1,5 @@
 						
-					       _    __ _               
+      					       _    __ _               
 				 _ __ ___  ___| |_ / _| | _____      __
 				| '__/ _ \/ __| __| |_| |/ _ \ \ /\ / /
 				| | |  __/\__ \ |_|  _| | (_) \ V  V / 
@@ -25,21 +25,17 @@
 
 ## About
 
-restflow allows you to run (Hiflow3)[http://hiflow3.org] as a webservice with a rest interface.
+restflow allows you to run [Hiflow3](http://hiflow3.org) as a webservice with a rest interface.
 The used Hiflow-Binding allowes an interaction with the simulation. You can change the environment or constraints in between all runs.
 
-Please note that HiFlow3 was released under the Academic License Agreement of KIT until version 1.3. All releases after and including version 1.3 are released under LGPLv3 to support a better community and open source development.
+Please note that HiFlow3 was released under the Academic License Agreement of KIT until version 1.3. 
+All releases after and including version 1.3 are released under LGPLv3 to support a better 
+community and open source development.
 
-The application ("Interactive HiFlow3 Soft Tissue Simulation"), which is accessed and used for simulation here, was developed at the Engineering Mathematics and Computing Lab (EMCL) at Heidelberg University as part of ongoing research within the SFB/TRR 125 (Cognition-Guided Surgery).
+The application ("Interactive HiFlow3 Soft Tissue Simulation"), which is accessed and used for simulation here, 
+was developed at the Engineering Mathematics and Computing Lab (EMCL) at Heidelberg University as 
+part of ongoing research within the SFB/TRR 125 (Cognition-Guided Surgery).
 
-## Installation 
+## Installation, Getting Started and Documentation 
 
-     $ pip install -r requirements.txt
-     $ install_magic_version_of_hiflow3 
-
-
-## Getting Started
-
-
-     
-
+Please see the [documentation on readthedocs.org](http://restflow.readthedocs.org) 
