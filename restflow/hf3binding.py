@@ -23,7 +23,7 @@ from vtkfunctions import *
 from .hf3configs import *
 from config import *
 from .base import  *
-
+from path import path
 
 SOLUTION_FILENAME = "_deformedSolution_np{np}_RefLvl{rlvl}_Tstep.{step}.pvtu"
 """Filename of result files written by elasticity.
