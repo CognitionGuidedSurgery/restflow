@@ -201,3 +201,38 @@ def indent(string, prefix="   "):
     "    a\n    b\n    c\n"
     """
     return prefix + string.replace("\n", "\n"+prefix)
+
+
+def dictionfy(tree):
+    """Creates a dictionary structure from a simple xml tree.
+
+    :param tree: lxml.etree._Element
+    :rtype: dict
+    """
+    if tree.text is not None:
+        return {tree.tag: tree.text}
+    else:
+        d = {}
+        for child in tree.iterchildren():
+            v = dictionfy(child).values()[0]
+            d[child.tag] = v
+        return {tree.tag: d}
+
+
+def read_xml(filename):
+    """Reads an xml file
+    :param filename: path to a xml file
+    :type filename: str
+    :returns: a dict structure
+    :rtype: dict
+    """
+    import lxml.etree
+
+    with open(filename) as fp:
+        parser = lxml.etree.XMLParser(remove_blank_text=True,
+                                      remove_pis=True,
+                                      remove_comments=True)
+        tree = lxml.etree.parse(fp, parser=parser)
+        return dictionfy(tree.getroot())
+
+
